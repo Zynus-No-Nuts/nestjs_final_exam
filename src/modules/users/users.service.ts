@@ -13,6 +13,7 @@ import { UpdateProfileDto } from './dto/update-profile.dto.js';
 
 const USER_PROFILE_SELECT = {
   id: true,
+  username: true,
   email: true,
   fullName: true,
   phone: true,

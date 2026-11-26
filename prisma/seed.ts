@@ -12,6 +12,7 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('Seeding E-commerce database...');
 
+  const adminUsername = process.env.SEED_ADMIN_USERNAME ?? 'admin';
   const adminEmail = process.env.SEED_ADMIN_EMAIL ?? 'admin@ecommerce.local';
   const adminPassword = process.env.SEED_ADMIN_PASSWORD ?? 'Admin@123456';
   const saltRounds = 10;
@@ -25,11 +26,13 @@ async function main() {
   const admin = await prisma.user.upsert({
     where: { email: adminEmail },
     update: {
+      username: adminUsername,
       fullName: 'System Administrator',
       role: Role.ADMIN,
       isActive: true,
     },
     create: {
+      username: adminUsername,
       email: adminEmail,
       password: adminPasswordHash,
       fullName: 'System Administrator',
@@ -42,14 +45,16 @@ async function main() {
   const customer = await prisma.user.upsert({
     where: { email: 'customer@ecommerce.local' },
     update: {
-      fullName: 'Nguyen Van A',
+      username: 'customer',
+      fullName: 'user_c01a9f',
       role: Role.CUSTOMER,
       isActive: true,
     },
     create: {
+      username: 'customer',
       email: 'customer@ecommerce.local',
       password: customerPasswordHash,
-      fullName: 'Nguyen Van A',
+      fullName: 'user_c01a9f',
       phone: '0901234567',
       role: Role.CUSTOMER,
       isActive: true,

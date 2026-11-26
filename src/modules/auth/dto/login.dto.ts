@@ -1,12 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsEmail, IsString, MinLength } from 'class-validator';
+import { IsString, MinLength } from 'class-validator';
 
 export class LoginDto {
-  @ApiProperty({ example: 'abc@gmail.com' })
+  @ApiProperty({ example: 'customer', minLength: 3 })
   @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value))
-  @IsEmail({ require_tld: true }, { message: 'Email không đúng định dạng (ví dụ: abc@gmail.com)' })
-  email: string;
+  @IsString()
+  @MinLength(3, { message: 'Tên đăng nhập phải có ít nhất 3 ký tự' })
+  username: string;
 
   @ApiProperty({ example: '12345', minLength: 5 })
   @IsString()

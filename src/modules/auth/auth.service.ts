@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { randomBytes } from 'node:crypto';
 import { JwtPayload } from '../../common/interfaces/jwt-payload.interface.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { LoginDto } from './dto/login.dto.js';
@@ -22,6 +23,7 @@ export interface AuthTokens {
 
 export interface SafeUser {
   id: string;
+  username: string;
   email: string;
   fullName: string;
   phone: string | null;
@@ -43,23 +45,32 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto): Promise<AuthResponse> {
+    const normalizedUsername = dto.username.trim().toLowerCase();
     const normalizedEmail = dto.email.trim().toLowerCase();
-    const existing = await this.prisma.user.findUnique({
-      where: { email: normalizedEmail },
-      select: { id: true },
+
+    const existing = await this.prisma.user.findFirst({
+      where: {
+        OR: [{ username: normalizedUsername }, { email: normalizedEmail }],
+      },
+      select: { username: true, email: true },
     });
 
     if (existing) {
-      throw new ConflictException('Email is already registered');
+      if (existing.username === normalizedUsername) {
+        throw new ConflictException('Tên đăng nhập đã được sử dụng');
+      }
+      throw new ConflictException('Email đã được đăng ký');
     }
 
     const passwordHash = await bcrypt.hash(dto.password, BCRYPT_SALT_ROUNDS);
+    const generatedDisplayName = `user_${randomBytes(3).toString('hex')}`;
 
     const user = await this.prisma.user.create({
       data: {
+        username: normalizedUsername,
         email: normalizedEmail,
         password: passwordHash,
-        fullName: dto.fullName.trim(),
+        fullName: generatedDisplayName,
         phone: dto.phone?.trim(),
         role: Role.CUSTOMER,
         cart: {
@@ -68,6 +79,7 @@ export class AuthService {
       },
       select: {
         id: true,
+        username: true,
         email: true,
         fullName: true,
         phone: true,
@@ -87,22 +99,22 @@ export class AuthService {
   }
 
   async login(dto: LoginDto): Promise<AuthResponse> {
-    const normalizedEmail = dto.email.trim().toLowerCase();
+    const normalizedUsername = dto.username.trim().toLowerCase();
     const user = await this.prisma.user.findUnique({
-      where: { email: normalizedEmail },
+      where: { username: normalizedUsername },
     });
 
     if (!user) {
-      throw new UnauthorizedException('Invalid email or password');
+      throw new UnauthorizedException('Tên đăng nhập hoặc mật khẩu không chính xác');
     }
 
     if (!user.isActive) {
-      throw new ForbiddenException('Account is disabled');
+      throw new ForbiddenException('Tài khoản đã bị vô hiệu hóa');
     }
 
     const isPasswordValid = await bcrypt.compare(dto.password, user.password);
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid email or password');
+      throw new UnauthorizedException('Tên đăng nhập hoặc mật khẩu không chính xác');
     }
 
     const tokens = await this.issueAndStoreTokens({
@@ -114,6 +126,7 @@ export class AuthService {
     return {
       user: {
         id: user.id,
+        username: user.username,
         email: user.email,
         fullName: user.fullName,
         phone: user.phone,

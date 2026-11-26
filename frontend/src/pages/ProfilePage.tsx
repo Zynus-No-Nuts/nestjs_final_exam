@@ -155,7 +155,16 @@ export function ProfilePage() {
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-500">Email đăng nhập</label>
+            <label className="mb-1.5 block text-xs font-medium text-slate-500">Tên đăng nhập</label>
+            <input
+              type="text"
+              disabled
+              value={user?.username ?? ''}
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-500"
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-slate-500">Địa chỉ Email</label>
             <input
               type="email"
               disabled
@@ -164,7 +173,7 @@ export function ProfilePage() {
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-slate-700">Họ và tên</label>
+            <label className="mb-1.5 block text-xs font-medium text-slate-700">Tên hiển thị</label>
             <input
               type="text"
               required

@@ -6,11 +6,11 @@ interface AuthContextValue {
   user: User | null;
   loading: boolean;
   isAdmin: boolean;
-  login: (email: string, password: string) => Promise<User>;
+  login: (username: string, password: string) => Promise<User>;
   register: (payload: {
+    username: string;
     email: string;
     password: string;
-    fullName: string;
     phone?: string;
   }) => Promise<User>;
   logout: () => Promise<void>;
@@ -48,10 +48,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('auth:expired', handleExpired);
   }, [refreshProfile]);
 
-  const login = async (email: string, password: string) => {
+  const login = async (username: string, password: string) => {
     const res = await apiClient.post<
       ApiEnvelope<{ user: User; accessToken: string; refreshToken: string }>
-    >('/auth/login', { email, password });
+    >('/auth/login', { username, password });
     const { user: loggedInUser, accessToken, refreshToken } = res.data.data;
     tokenStorage.setTokens(accessToken, refreshToken);
     setUser(loggedInUser);
@@ -59,9 +59,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const register = async (payload: {
+    username: string;
     email: string;
     password: string;
-    fullName: string;
     phone?: string;
   }) => {
     const res = await apiClient.post<

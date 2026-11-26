@@ -4,13 +4,18 @@ import { Link, useNavigate } from 'react-router-dom';
 import { getApiErrorMessage } from '../api/client';
 import { PasswordInput } from '../components/PasswordInput';
 import { useAuth } from '../context/AuthContext';
-import { MIN_PASSWORD_LENGTH, validateEmail, validatePassword } from '../utils/validation';
+import {
+  MIN_PASSWORD_LENGTH,
+  validateEmail,
+  validatePassword,
+  validateUsername,
+} from '../utils/validation';
 
 export function RegisterPage() {
   const { register } = useAuth();
   const navigate = useNavigate();
 
-  const [fullName, setFullName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
@@ -22,8 +27,9 @@ export function RegisterPage() {
     e.preventDefault();
     setError('');
 
-    if (fullName.trim().length < 2) {
-      setError('Họ và tên phải có ít nhất 2 ký tự');
+    const usernameErr = validateUsername(username);
+    if (usernameErr) {
+      setError(usernameErr);
       return;
     }
 
@@ -47,7 +53,7 @@ export function RegisterPage() {
     setLoading(true);
     try {
       await register({
-        fullName: fullName.trim(),
+        username: username.trim(),
         email: email.trim(),
         password,
         ...(phone.trim() ? { phone: phone.trim() } : {}),
@@ -81,18 +87,22 @@ export function RegisterPage() {
 
         <form onSubmit={handleSubmit} noValidate className="space-y-4">
           <div>
-            <label htmlFor="reg-fullname" className="mb-1.5 block text-sm font-medium text-slate-700">
-              Họ và tên
+            <label
+              htmlFor="reg-username"
+              className="mb-1.5 block text-sm font-medium text-slate-700"
+            >
+              Tên đăng nhập
             </label>
             <input
-              id="reg-fullname"
+              id="reg-username"
               type="text"
               required
-              minLength={2}
-              autoComplete="name"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              placeholder="Nguyễn Văn A"
+              minLength={3}
+              maxLength={30}
+              autoComplete="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Ví dụ: nguyenvana"
               className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 focus:outline-none"
             />
           </div>

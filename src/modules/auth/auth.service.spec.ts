@@ -10,6 +10,7 @@ describe('AuthService', () => {
   let authService: AuthService;
   let prisma: {
     user: {
+      findFirst: ReturnType<typeof vi.fn>;
       findUnique: ReturnType<typeof vi.fn>;
       create: ReturnType<typeof vi.fn>;
       update: ReturnType<typeof vi.fn>;
@@ -22,6 +23,7 @@ describe('AuthService', () => {
   beforeEach(() => {
     prisma = {
       user: {
+        findFirst: vi.fn(),
         findUnique: vi.fn(),
         create: vi.fn(),
         update: vi.fn(),
@@ -50,51 +52,60 @@ describe('AuthService', () => {
     );
   });
 
-  it('throws ConflictException when registering with an existing email', async () => {
-    prisma.user.findUnique.mockResolvedValue({ id: 'existing-id' });
+  it('throws ConflictException when registering with an existing username', async () => {
+    prisma.user.findFirst.mockResolvedValue({
+      username: 'takenuser',
+      email: 'other@gmail.com',
+    });
 
     await expect(
       authService.register({
-        email: 'taken@example.com',
-        password: 'Password@123',
-        fullName: 'Test User',
+        username: 'takenuser',
+        email: 'new@gmail.com',
+        password: '12345',
       }),
     ).rejects.toThrow(ConflictException);
   });
 
-  it('registers a new user and issues access & refresh tokens', async () => {
-    prisma.user.findUnique.mockResolvedValue(null);
-    prisma.user.create.mockResolvedValue({
-      id: 'user-1',
-      email: 'new@example.com',
-      fullName: 'New User',
-      phone: null,
-      avatarUrl: null,
-      role: Role.CUSTOMER,
-      createdAt: new Date(),
-    });
+  it('registers a new user with auto-generated user_xxxxxx display name and issues tokens', async () => {
+    prisma.user.findFirst.mockResolvedValue(null);
+    prisma.user.create.mockImplementation(
+      ({ data }: { data: { username: string; email: string; fullName: string } }) => ({
+        id: 'user-1',
+        username: data.username,
+        email: data.email,
+        fullName: data.fullName,
+        phone: null,
+        avatarUrl: null,
+        role: Role.CUSTOMER,
+        createdAt: new Date(),
+      }),
+    );
     jwtService.signAsync.mockResolvedValueOnce('access-jwt').mockResolvedValueOnce('refresh-jwt');
     prisma.user.update.mockResolvedValue({});
 
     const result = await authService.register({
-      email: 'NEW@example.com',
-      password: 'Password@123',
-      fullName: 'New User',
+      username: 'NewUser01',
+      email: 'NEW@gmail.com',
+      password: '12345',
     });
 
     expect(result.accessToken).toBe('access-jwt');
     expect(result.refreshToken).toBe('refresh-jwt');
-    expect(result.user.email).toBe('new@example.com');
+    expect(result.user.username).toBe('newuser01');
+    expect(result.user.email).toBe('new@gmail.com');
+    expect(result.user.fullName).toMatch(/^user_[a-f0-9]{6}$/);
     expect(prisma.user.update).toHaveBeenCalledTimes(1);
   });
 
   it('throws UnauthorizedException when login password does not match', async () => {
-    const hash = await bcrypt.hash('CorrectPass@123', 4);
+    const hash = await bcrypt.hash('12345', 4);
     prisma.user.findUnique.mockResolvedValue({
       id: 'user-1',
-      email: 'user@example.com',
+      username: 'customer01',
+      email: 'user@gmail.com',
       password: hash,
-      fullName: 'User',
+      fullName: 'user_123abc',
       phone: null,
       avatarUrl: null,
       role: Role.CUSTOMER,
@@ -104,8 +115,8 @@ describe('AuthService', () => {
 
     await expect(
       authService.login({
-        email: 'user@example.com',
-        password: 'WrongPassword',
+        username: 'customer01',
+        password: 'wrongpassword',
       }),
     ).rejects.toThrow(UnauthorizedException);
   });

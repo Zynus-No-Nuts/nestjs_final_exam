@@ -4,13 +4,13 @@ import { Link, useNavigate } from 'react-router-dom';
 import { getApiErrorMessage } from '../api/client';
 import { PasswordInput } from '../components/PasswordInput';
 import { useAuth } from '../context/AuthContext';
-import { MIN_PASSWORD_LENGTH, validateEmail, validatePassword } from '../utils/validation';
+import { MIN_PASSWORD_LENGTH, validatePassword, validateUsername } from '../utils/validation';
 
 export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -19,9 +19,9 @@ export function LoginPage() {
     e.preventDefault();
     setError('');
 
-    const emailErr = validateEmail(email);
-    if (emailErr) {
-      setError(emailErr);
+    const usernameErr = validateUsername(username);
+    if (usernameErr) {
+      setError(usernameErr);
       return;
     }
 
@@ -33,10 +33,10 @@ export function LoginPage() {
 
     setLoading(true);
     try {
-      const user = await login(email.trim(), password);
+      const user = await login(username.trim(), password);
       navigate(user.role === 'ADMIN' ? '/admin' : '/');
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Email hoặc mật khẩu không chính xác'));
+      setError(getApiErrorMessage(err, 'Tên đăng nhập hoặc mật khẩu không chính xác'));
     } finally {
       setLoading(false);
     }
@@ -63,17 +63,20 @@ export function LoginPage() {
 
         <form onSubmit={handleSubmit} noValidate className="space-y-4">
           <div>
-            <label htmlFor="login-email" className="mb-1.5 block text-sm font-medium text-slate-700">
-              Địa chỉ Email
+            <label
+              htmlFor="login-username"
+              className="mb-1.5 block text-sm font-medium text-slate-700"
+            >
+              Tên đăng nhập
             </label>
             <input
-              id="login-email"
-              type="email"
+              id="login-username"
+              type="text"
               required
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="abc@gmail.com"
+              autoComplete="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Nhập tên đăng nhập"
               className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 focus:outline-none"
             />
           </div>
