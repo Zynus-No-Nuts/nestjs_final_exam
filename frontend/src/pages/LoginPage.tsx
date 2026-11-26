@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { getApiErrorMessage } from '../api/client';
 import { PasswordInput } from '../components/PasswordInput';
 import { useAuth } from '../context/AuthContext';
+import { MIN_PASSWORD_LENGTH, validateEmail, validatePassword } from '../utils/validation';
 
 export function LoginPage() {
   const { login } = useAuth();
@@ -17,9 +18,22 @@ export function LoginPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
+
+    const emailErr = validateEmail(email);
+    if (emailErr) {
+      setError(emailErr);
+      return;
+    }
+
+    const pwdErr = validatePassword(password);
+    if (pwdErr) {
+      setError(pwdErr);
+      return;
+    }
+
     setLoading(true);
     try {
-      const user = await login(email, password);
+      const user = await login(email.trim(), password);
       navigate(user.role === 'ADMIN' ? '/admin' : '/');
     } catch (err) {
       setError(getApiErrorMessage(err, 'Email hoặc mật khẩu không chính xác'));
@@ -47,7 +61,7 @@ export function LoginPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} noValidate className="space-y-4">
           <div>
             <label htmlFor="login-email" className="mb-1.5 block text-sm font-medium text-slate-700">
               Địa chỉ Email
@@ -59,7 +73,7 @@ export function LoginPage() {
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="ban@email.com"
+              placeholder="abc@gmail.com"
               className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 focus:outline-none"
             />
           </div>
@@ -68,10 +82,11 @@ export function LoginPage() {
             id="login-password"
             label="Mật khẩu"
             required
+            minLength={MIN_PASSWORD_LENGTH}
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Nhập mật khẩu của bạn"
+            placeholder="Nhập mật khẩu (tối thiểu 5 ký tự)"
           />
 
           <button

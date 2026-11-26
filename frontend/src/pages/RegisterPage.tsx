@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { getApiErrorMessage } from '../api/client';
 import { PasswordInput } from '../components/PasswordInput';
 import { useAuth } from '../context/AuthContext';
+import { MIN_PASSWORD_LENGTH, validateEmail, validatePassword } from '../utils/validation';
 
 export function RegisterPage() {
   const { register } = useAuth();
@@ -21,6 +22,23 @@ export function RegisterPage() {
     e.preventDefault();
     setError('');
 
+    if (fullName.trim().length < 2) {
+      setError('Họ và tên phải có ít nhất 2 ký tự');
+      return;
+    }
+
+    const emailErr = validateEmail(email);
+    if (emailErr) {
+      setError(emailErr);
+      return;
+    }
+
+    const pwdErr = validatePassword(password);
+    if (pwdErr) {
+      setError(pwdErr);
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError('Mật khẩu xác nhận không khớp');
       return;
@@ -29,8 +47,8 @@ export function RegisterPage() {
     setLoading(true);
     try {
       await register({
-        fullName,
-        email,
+        fullName: fullName.trim(),
+        email: email.trim(),
         password,
         ...(phone.trim() ? { phone: phone.trim() } : {}),
       });
@@ -61,7 +79,7 @@ export function RegisterPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} noValidate className="space-y-4">
           <div>
             <label htmlFor="reg-fullname" className="mb-1.5 block text-sm font-medium text-slate-700">
               Họ và tên
@@ -90,7 +108,7 @@ export function RegisterPage() {
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="ban@email.com"
+              placeholder="abc@gmail.com"
               className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 focus:outline-none"
             />
           </div>
@@ -114,18 +132,18 @@ export function RegisterPage() {
             id="reg-password"
             label="Mật khẩu"
             required
-            minLength={8}
+            minLength={MIN_PASSWORD_LENGTH}
             autoComplete="new-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Tối thiểu 8 ký tự"
+            placeholder="Tối thiểu 5 ký tự"
           />
 
           <PasswordInput
             id="reg-confirm-password"
             label="Nhập lại mật khẩu"
             required
-            minLength={8}
+            minLength={MIN_PASSWORD_LENGTH}
             autoComplete="new-password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}

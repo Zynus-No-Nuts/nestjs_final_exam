@@ -4,6 +4,7 @@ import { apiClient, getApiErrorMessage } from '../api/client';
 import { PasswordInput } from '../components/PasswordInput';
 import { useAuth } from '../context/AuthContext';
 import type { Address, ApiEnvelope } from '../types';
+import { MIN_PASSWORD_LENGTH, validatePassword } from '../utils/validation';
 
 export function ProfilePage() {
   const { user, refreshProfile } = useAuth();
@@ -62,6 +63,19 @@ export function ProfilePage() {
     e.preventDefault();
     setMessage('');
     setError('');
+
+    const currErr = validatePassword(currentPassword, 'Mật khẩu hiện tại');
+    if (currErr) {
+      setError(currErr);
+      return;
+    }
+
+    const nextErr = validatePassword(newPassword, 'Mật khẩu mới');
+    if (nextErr) {
+      setError(nextErr);
+      return;
+    }
+
     try {
       await apiClient.patch('/users/profile/password', {
         currentPassword,
@@ -316,6 +330,7 @@ export function ProfilePage() {
       {/* Password Change */}
       <form
         onSubmit={handleChangePassword}
+        noValidate
         className="space-y-4 rounded-2xl border border-slate-200/90 bg-white p-6"
       >
         <h2 className="flex items-center gap-2 font-semibold text-slate-900">
@@ -327,6 +342,7 @@ export function ProfilePage() {
             id="current-pwd"
             label="Mật khẩu hiện tại"
             required
+            minLength={MIN_PASSWORD_LENGTH}
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
             placeholder="Nhập mật khẩu hiện tại"
@@ -335,10 +351,10 @@ export function ProfilePage() {
             id="new-pwd"
             label="Mật khẩu mới"
             required
-            minLength={8}
+            minLength={MIN_PASSWORD_LENGTH}
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
-            placeholder="Tối thiểu 8 ký tự"
+            placeholder="Tối thiểu 5 ký tự"
           />
         </div>
         <button
